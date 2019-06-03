@@ -796,6 +796,7 @@ LRXProcessor::processME(FILE *input, FILE *output)
   map<int, map<wstring, double> > scores; //
 
   vector<State*> alive_states ;
+  vector<State*> new_states;
   alive_states.push_back(new State(*initial_state));
 
   while(!feof(input))
@@ -858,6 +859,13 @@ LRXProcessor::processME(FILE *input, FILE *output)
       {
         fwprintf(stderr, L"[POS] %d: [sl %d ; tl %d ; bl %d]: %S\n", pos, sl[pos].size(), tl[pos].size(), blanks[pos].size(), sl[pos].c_str());
       }
+      for (State *s : new_states) {
+        if (s != initial_state) {
+          delete s;
+        }
+      }
+      new_states.clear(); // alive_states_new
+
       // \forall s \in A
       set<wstring> seen_ids;
       for(vector<State*>::const_iterator it = alive_states.begin(); it != alive_states.end(); it++)
