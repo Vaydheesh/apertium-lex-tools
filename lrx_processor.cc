@@ -795,10 +795,10 @@ LRXProcessor::processME(FILE *input, FILE *output)
 
   map<int, map<wstring, double> > scores; //
 
-  vector<State> alive_states_clean ;
-  vector<State> alive_states = alive_states_clean ;
-  alive_states.push_back(*initial_state);
-  vector<State> new_states;
+  vector<State*> alive_states_clean ;
+  vector<State*> alive_states = alive_states_clean ;
+  alive_states.push_back(initial_state);
+  vector<State*> new_states;
 
   while(!feof(input))
   {
@@ -860,36 +860,41 @@ LRXProcessor::processME(FILE *input, FILE *output)
       {
         fwprintf(stderr, L"[POS] %d: [sl %d ; tl %d ; bl %d]: %S\n", pos, sl[pos].size(), tl[pos].size(), blanks[pos].size(), sl[pos].c_str());
       }
+      for (State *s : new_states) {
+        if (s != initial_state) {
+          delete s;
+        }
+      }
       new_states.clear(); // alive_states_new
 
       // \forall s \in A
       set<wstring> seen_ids;
-      for(vector<State>::const_iterator it = alive_states.begin(); it != alive_states.end(); it++)
+      for(vector<State*>::const_iterator it = alive_states.begin(); it != alive_states.end(); it++)
       {
-        State s = *it;
+        State* s = new State(**it);
         // \IF \exists c \in Q : \delta(s, sent[i]) = c
-        s.step(alphabet(L"<$>"));
+        s->step(alphabet(L"<$>"));
 
         // A \gets A \cup {c}
-        if(s.size() > 0) // If the current state has outgoing transitions,
+        if(s->size() > 0) // If the current state has outgoing transitions,
                          // add it to the new alive states
         {
-          new_states.push_back(s);
+          new_states.push_back(new State(*s));
         }
-        s.step(alphabet(L"<$>"));
+        s->step(alphabet(L"<$>"));
 
         // \IF c \in F
-        if(s.isFinal(anfinals))
+        if(s->isFinal(anfinals))
         {
           // We've reached a final state, so we need to evaluate the rule we've matched
           if(debugMode)
           {
-            wstring out = s.filterFinals(anfinals, alphabet, escaped_chars);
+            wstring out = s->filterFinals(anfinals, alphabet, escaped_chars);
             fwprintf(stderr, L"    filter_finals: %S\n", out.c_str());
           }
 
           set<pair<wstring, vector<wstring> > > outpaths;
-          outpaths = s.filterFinalsLRX(anfinals, alphabet, escaped_chars, false, false, 0);
+          outpaths = s->filterFinalsLRX(anfinals, alphabet, escaped_chars, false, false, 0);
 
           set<pair<wstring, vector<wstring> > >::iterator it;
           for(it = outpaths.begin(); it != outpaths.end(); it++)
@@ -934,9 +939,10 @@ LRXProcessor::processME(FILE *input, FILE *output)
             //fwprintf(stderr, L"#SPAN[%d, %d]\n", (pos-path.size()), pos);
           }
         }
+        delete s;
       }
       alive_states.swap(new_states);
-      alive_states.push_back(*initial_state);
+      alive_states.push_back(initial_state);
 
       if(debugMode)
       {
@@ -1084,12 +1090,17 @@ LRXProcessor::processME(FILE *input, FILE *output)
         fwprintf(stderr, L"outOfWord = false\n");
       }
 
+      for (State *s : new_states) {
+        if (s != initial_state) {
+          delete s;
+        }
+      }
       new_states.clear();
       wstring res = L"";
-      for(vector<State>::const_iterator it = alive_states.begin(); it != alive_states.end(); it++)
+      for(vector<State*>::const_iterator it = alive_states.begin(); it != alive_states.end(); it++)
       {
         res = L"";
-        State s = *it;
+        State* s = new State(**it);
         if(val < 0)
         {
           alphabet.getSymbol(res, val,  false);
@@ -1097,7 +1108,7 @@ LRXProcessor::processME(FILE *input, FILE *output)
           {
             fwprintf(stderr, L"  step: %S\n", res.c_str());
           }
-          s.step(val, alphabet(L"<ANY_TAG>"));
+          s->step(val, alphabet(L"<ANY_TAG>"));
         }
         else
         {
@@ -1105,9 +1116,9 @@ LRXProcessor::processME(FILE *input, FILE *output)
           {
             fwprintf(stderr, L"  step: %C\n", val);
           }
-          s.step_case(val, alphabet(L"<ANY_CHAR>"), false);
+          s->step_case(val, alphabet(L"<ANY_CHAR>"), false);
         }
-        if(s.size() > 0) // If the current state has outgoing transitions, add it to the new alive states
+        if(s->size() > 0) // If the current state has outgoing transitions, add it to the new alive states
         {
           new_states.push_back(s);
         }
