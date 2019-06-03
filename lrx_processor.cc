@@ -795,10 +795,8 @@ LRXProcessor::processME(FILE *input, FILE *output)
 
   map<int, map<wstring, double> > scores; //
 
-  vector<State*> alive_states_clean ;
-  vector<State*> alive_states = alive_states_clean ;
-  alive_states.push_back(initial_state);
-  vector<State*> new_states;
+  vector<State*> alive_states ;
+  alive_states.push_back(new State(*initial_state));
 
   while(!feof(input))
   {
@@ -860,13 +858,6 @@ LRXProcessor::processME(FILE *input, FILE *output)
       {
         fwprintf(stderr, L"[POS] %d: [sl %d ; tl %d ; bl %d]: %S\n", pos, sl[pos].size(), tl[pos].size(), blanks[pos].size(), sl[pos].c_str());
       }
-      for (State *s : new_states) {
-        if (s != initial_state) {
-          delete s;
-        }
-      }
-      new_states.clear(); // alive_states_new
-
       // \forall s \in A
       set<wstring> seen_ids;
       for(vector<State*>::const_iterator it = alive_states.begin(); it != alive_states.end(); it++)
@@ -942,7 +933,7 @@ LRXProcessor::processME(FILE *input, FILE *output)
         delete s;
       }
       alive_states.swap(new_states);
-      alive_states.push_back(initial_state);
+      alive_states.push_back(new State(*initial_state));
 
       if(debugMode)
       {
@@ -1096,11 +1087,14 @@ LRXProcessor::processME(FILE *input, FILE *output)
         }
       }
       new_states.clear();
+      // vector<State*> new_states2;
       wstring res = L"";
-      for(vector<State*>::const_iterator it = alive_states.begin(); it != alive_states.end(); it++)
+      vector<size_t> drop;
+      for(size_t i = 0; i < alive_states.size(); ++i) 
+      // for(vector<State*>::const_iterator it = alive_states.begin(); it != alive_states.end(); it++)
       {
         res = L"";
-        State* s = new State(**it);
+        State* s = alive_states[i];
         if(val < 0)
         {
           alphabet.getSymbol(res, val,  false);
@@ -1120,14 +1114,26 @@ LRXProcessor::processME(FILE *input, FILE *output)
         }
         if(s->size() > 0) // If the current state has outgoing transitions, add it to the new alive states
         {
-          new_states.push_back(s);
+          // new_states2.push_back(s);
+        }
+        else {
+            drop.push_back(i);
         }
       }
       if(debugMode)
       {
         fwprintf(stderr, L"new_states: %d\n", new_states.size());
       }
-      alive_states.swap(new_states);
+      // for(size_t d = drop.size() - 1; d >= 0; --d) {
+      //     // alive_states.erase(drop[d]);
+      //     alive_states.erase(alive_states.begin() + drop[d]);
+      // }
+      // alive_states.swap(new_states2);
+      // for (State *s : new_states2) {
+      //   if (s != initial_state) {
+      //     delete s;
+      //   }
+      // }
       // In the middle of a word, don't push initial state here cf. https://github.com/apertium/apertium-lex-tools/issues/19
     }
 
