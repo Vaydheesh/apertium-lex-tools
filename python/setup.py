@@ -55,7 +55,6 @@ lextools_module = Extension(
     ],
     library_dirs= [
     '../../externallibs/win64/libxml2-2.9.3-win32-x86_64/lib',
-    'C:/Python37/libs',
     '../../externallibs/win64/local-build',
     ],
     extra_compile_args='-Wall -Wextra -g -O2 -std=c++2a'.split(),
